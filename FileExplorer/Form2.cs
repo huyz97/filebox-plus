@@ -118,11 +118,8 @@ namespace FileExplorer
                                 this.Close();
                             }
                         }
-                        else
-                        {
-                            MessageBox.Show("wrong username or password");
-                        }
                     }
+                    MessageBox.Show("wrong username or password");
                 }
             }
         }

@@ -99,7 +99,7 @@
             this.button_back.Name = "button_back";
             this.button_back.Size = new System.Drawing.Size(175, 56);
             this.button_back.TabIndex = 4;
-            this.button_back.Text = "后退";
+            this.button_back.Text = "Back";
             this.button_back.UseVisualStyleBackColor = true;
             this.button_back.Click += new System.EventHandler(this.button_back_Click);
             // 
@@ -168,7 +168,7 @@
             this.button_delete.Name = "button_delete";
             this.button_delete.Size = new System.Drawing.Size(175, 56);
             this.button_delete.TabIndex = 10;
-            this.button_delete.Text = "删除";
+            this.button_delete.Text = "Delete";
             this.button_delete.UseVisualStyleBackColor = true;
             this.button_delete.Click += new System.EventHandler(this.button_delete_Click);
             // 
@@ -214,7 +214,7 @@
             this.button_go.Name = "button_go";
             this.button_go.Size = new System.Drawing.Size(175, 56);
             this.button_go.TabIndex = 12;
-            this.button_go.Text = "转到";
+            this.button_go.Text = "Go";
             this.button_go.UseVisualStyleBackColor = true;
             this.button_go.Click += new System.EventHandler(this.button_go_Click);
             // 

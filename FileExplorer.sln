@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.572
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileExplorer", "FileExplorer\FileExplorer.csproj", "{A9C4EA7C-4348-4317-B4A1-BF34764B75D3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileBoxPlus", "FileExplorer\FileBoxPlus.csproj", "{A9C4EA7C-4348-4317-B4A1-BF34764B75D3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
