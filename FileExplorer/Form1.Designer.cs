@@ -37,9 +37,6 @@
             this.button_back = new System.Windows.Forms.Button();
             this.richTextBox_txtShow = new System.Windows.Forms.RichTextBox();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
-            this.button_copy = new System.Windows.Forms.Button();
-            this.button_cut = new System.Windows.Forms.Button();
-            this.button_parse = new System.Windows.Forms.Button();
             this.button_delete = new System.Windows.Forms.Button();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
@@ -47,6 +44,7 @@
             this.toolStripStatusLabel3 = new System.Windows.Forms.ToolStripStatusLabel();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.button_go = new System.Windows.Forms.Button();
+            this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -123,43 +121,6 @@
             this.pictureBox1.TabStop = false;
             this.pictureBox1.Visible = false;
             // 
-            // button_copy
-            // 
-            this.button_copy.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.button_copy.Location = new System.Drawing.Point(345, 94);
-            this.button_copy.Margin = new System.Windows.Forms.Padding(7);
-            this.button_copy.Name = "button_copy";
-            this.button_copy.Size = new System.Drawing.Size(175, 56);
-            this.button_copy.TabIndex = 7;
-            this.button_copy.Text = "复制";
-            this.button_copy.UseVisualStyleBackColor = true;
-            this.button_copy.Click += new System.EventHandler(this.button_copy_Click);
-            // 
-            // button_cut
-            // 
-            this.button_cut.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.button_cut.Location = new System.Drawing.Point(681, 97);
-            this.button_cut.Margin = new System.Windows.Forms.Padding(7);
-            this.button_cut.Name = "button_cut";
-            this.button_cut.Size = new System.Drawing.Size(175, 56);
-            this.button_cut.TabIndex = 8;
-            this.button_cut.Text = "剪切";
-            this.button_cut.UseVisualStyleBackColor = true;
-            this.button_cut.Click += new System.EventHandler(this.button_cut_Click);
-            // 
-            // button_parse
-            // 
-            this.button_parse.Enabled = false;
-            this.button_parse.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.button_parse.Location = new System.Drawing.Point(1045, 94);
-            this.button_parse.Margin = new System.Windows.Forms.Padding(7);
-            this.button_parse.Name = "button_parse";
-            this.button_parse.Size = new System.Drawing.Size(175, 56);
-            this.button_parse.TabIndex = 9;
-            this.button_parse.Text = "粘贴";
-            this.button_parse.UseVisualStyleBackColor = true;
-            this.button_parse.Click += new System.EventHandler(this.button_parse_Click);
-            // 
             // button_delete
             // 
             this.button_delete.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
@@ -218,6 +179,10 @@
             this.button_go.UseVisualStyleBackColor = true;
             this.button_go.Click += new System.EventHandler(this.button_go_Click);
             // 
+            // openFileDialog1
+            // 
+            this.openFileDialog1.FileName = "openFileDialog1";
+            // 
             // Form1
             // 
             this.AcceptButton = this.button_go;
@@ -228,9 +193,6 @@
             this.Controls.Add(this.button_go);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.button_delete);
-            this.Controls.Add(this.button_parse);
-            this.Controls.Add(this.button_cut);
-            this.Controls.Add(this.button_copy);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.richTextBox_txtShow);
             this.Controls.Add(this.button_back);
@@ -260,9 +222,6 @@
         private System.Windows.Forms.Button button_back;
         private System.Windows.Forms.RichTextBox richTextBox_txtShow;
         private System.Windows.Forms.PictureBox pictureBox1;
-        private System.Windows.Forms.Button button_copy;
-        private System.Windows.Forms.Button button_cut;
-        private System.Windows.Forms.Button button_parse;
         private System.Windows.Forms.Button button_delete;
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
@@ -270,6 +229,7 @@
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel3;
         private System.Windows.Forms.Timer timer1;
         private System.Windows.Forms.Button button_go;
+        private System.Windows.Forms.OpenFileDialog openFileDialog1;
     }
 }
 

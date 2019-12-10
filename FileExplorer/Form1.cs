@@ -7,14 +7,20 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.IO;
+using System.Runtime.InteropServices;
+
 
 namespace FileExplorer
 {
     public partial class Form1 : Form
     {
+        public byte[] key;
+        public string loginUser;
         public Form1()
         {
             InitializeComponent();
+            key = System.Text.Encoding.Default.GetBytes(Form2.key);
+            loginUser = Form2.loginUser;
         }
         /// <summary>
         /// 定义初始的全局变量
@@ -29,14 +35,12 @@ namespace FileExplorer
         private void button_open_Click(object sender, EventArgs e)
         {
            
-                if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
+                if (openFileDialog1.ShowDialog() == DialogResult.OK)
                 {
-                    string path = folderBrowserDialog.SelectedPath;
-                    explorerPath = path;
-                    treeViewPath = path;
-                    this.textBox_path.Text = path;
-                    this.treeView_list.Nodes.Clear();
-                    getExplorerView(null, path);
+                    string orig_path = openFileDialog1.FileName;
+                    string enc_file_path = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), loginUser);
+                    des.encrypted_write(enc_file_path, orig_path, key);
+                    
                 }
          
           
@@ -56,7 +60,7 @@ namespace FileExplorer
                 //遍历文件夹
                 foreach (DirectoryInfo NextFolder in TheFolder.GetDirectories())
                 {
-                    this.listView_show.Items.Add("【" + NextFolder.Name + "】");
+                    this.listView_show.Items.Add("[" + NextFolder.Name + "]");
 
                 }
                 //遍历文件
@@ -140,7 +144,7 @@ namespace FileExplorer
                 newPath = e.Node.Text;   
                 while (true)
                 {
-                    newPath = newPath.Insert(0, node.Text + "\\"); //node.Text+"\\"                 
+                    newPath = newPath.Insert(0, node.Text + "/"); //node.Text+"/"                 
                     node = node.Parent;        
                 }                
             }
@@ -150,7 +154,7 @@ namespace FileExplorer
             }
             if (!newPath.Equals(""))
             {
-                explorerPath = newPath.Insert(0, treeViewPath + "\\");                            
+                explorerPath = newPath.Insert(0, treeViewPath + "/");                            
                 getFolderView(explorerPath);//遍历该层文件 
             }           
         }
@@ -165,16 +169,16 @@ namespace FileExplorer
             try
             {
                 string filename = this.listView_show.SelectedItems[0].SubItems[0].Text;
-                if (filename.StartsWith("【")) //目录处理方式
+                if (filename.StartsWith("[")) //目录处理方式
                 {
-                    filename = filename.Replace("【", "");
-                    filename = filename.Replace("】", "");
-                    string newPath = explorerPath + "\\" + filename;
+                    filename = filename.Replace("[", "");
+                    filename = filename.Replace("]", "");
+                    string newPath = explorerPath + "/" + filename;
                     getFolderView(newPath);//遍历该层文件                    
                 }
                 else //文件处理方式
                 {                 
-                    string newPath = explorerPath + "\\" + filename;    
+                    string newPath = explorerPath + "/" + filename;    
                     //显示文件大小
                     int size = getFileSize(newPath);
                     if(size > 1024*1024)
@@ -208,7 +212,7 @@ namespace FileExplorer
         {
             try
             {
-                string newPath = explorerPath.Substring(0, explorerPath.LastIndexOf("\\"));
+                string newPath = explorerPath.Substring(0, explorerPath.LastIndexOf("/"));
                 getFolderView(newPath);
             }catch(ArgumentOutOfRangeException)
             {
@@ -223,10 +227,6 @@ namespace FileExplorer
             if(getFileSize(path)<1000 && getFileType(path)) //如果文件小于1000KB，并且后缀为文本文件类型
             {                
                 Read_line(path);
-            }
-            else if (getFileSize(path) < 5000 && getPicFileType(path))
-            {
-                openPic(path);
             }
         }
         /// <summary>
@@ -246,16 +246,7 @@ namespace FileExplorer
             }
             sr.Close();
         }
-        /// <summary>
-        /// 打开一幅图像，前提是先将之前的文本控件隐藏，然后显示图片控件
-        /// </summary>
-        /// <param name="path"></param>
-        private void openPic(string path)
-        {
-            this.richTextBox_txtShow.Visible = false;
-            this.pictureBox1.Visible = true;           
-            this.pictureBox1.ImageLocation = path;
-        }
+       
         /// <summary>
         /// 获取文件的大小
         /// </summary>
@@ -295,24 +286,7 @@ namespace FileExplorer
             }
             return false;
         }
-        /// <summary>
-        /// 获取文件类型是否为图片，主要是根据文件后缀判断
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        private bool getPicFileType(string path)
-        {
-            string fileType = path.Substring(path.LastIndexOf(".") + 1, path.Length - path.LastIndexOf(".") - 1);
-            string[] type = { "jpg", "jpeg", "png", "bmp", "ico", "gif" };
-            for (int i = 0; i < type.Length; i++)
-            {
-                if (fileType.Equals(type[i]))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
+        
         /// <summary>
         /// 定时器-状态栏
         /// </summary>
@@ -321,7 +295,7 @@ namespace FileExplorer
         private void StatuUpdate(object sender, EventArgs e)
         {
             toolStripStatusLabel1.Text = DateTime.Now.ToString();//时间
-            toolStripStatusLabel2.Text = "共"+this.listView_show.Items.Count+"个项目"; //文件数          
+            toolStripStatusLabel2.Text = "total"+this.listView_show.Items.Count+"project"; //文件数          
         }
         /// <summary>
         /// 转到
@@ -346,7 +320,7 @@ namespace FileExplorer
             try
             {
                 string filename = this.listView_show.SelectedItems[0].SubItems[0].Text;
-                string newPath = explorerPath + "\\" + filename;
+                string newPath = explorerPath + "/" + filename;
                 if (!filename.Equals(""))
                 {
                     DialogResult r1 = MessageBox.Show("是否永久删除该文件？", "删除", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
@@ -371,67 +345,16 @@ namespace FileExplorer
             }
             
         }
-        /// <summary>
-        /// 拷贝按钮点击事件,目前仅针对文件，文件夹不可以
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        string copy_path = "";
-        string copy_name = "";
-        private void button_copy_Click(object sender, EventArgs e)
-        {
-            this.button_parse.Enabled = true;
-            copy_name = this.listView_show.SelectedItems[0].SubItems[0].Text;
-            copy_path = explorerPath + "\\" + copy_name;
-        }
-        /// <summary>
-        /// 剪切按钮点击事件
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        string cut_path = "";
-        string cut_name = "";
-        private void button_cut_Click(object sender, EventArgs e)
-        {
-            this.button_parse.Enabled = true;
-            cut_name = this.listView_show.SelectedItems[0].SubItems[0].Text;
-            cut_path = explorerPath + "\\" + cut_name;
-        }
-        /// <summary>
-        /// 粘贴按钮点击事件
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        string parse_path = "";
-        private void button_parse_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                parse_path = explorerPath;
-                if (!copy_path.Equals(""))
-                {
-                    File.Copy(copy_path, parse_path + "\\" + copy_name);
-                    getFolderView(parse_path);
-                    copy_path = "";
-                }
-
-                else if (!cut_path.Equals(""))
-                {
-                    File.Move(cut_path, parse_path + "\\" + cut_name);
-                    getFolderView(parse_path);
-                    cut_path = "";
-                }
-            }catch(Exception)
-            {
-                MessageBox.Show("目前支持对文件操作");
-            }
-            
-           
-        }
 
         private void Form1_Load(object sender, EventArgs e)
         {
 
         }
+    }
+    public class des
+    {
+        [DllImport("./libfilebox.so", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void encrypted_write(string enc_file_path, string orig_file_path, byte[] des_key);
+        public static extern int decrypted_read(string filepath, string buffer, byte[] des_key);
     }
 }

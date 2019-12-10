@@ -8,15 +8,11 @@ using System.Drawing;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
-using System.Runtime.InteropServices;
+
 
 namespace FileExplorer
 {
-    //public class key
-    //{
-    //    [DllImport("./liblinux.so", CallingConvention = CallingConvention.Cdecl)]
-    //    public static extern void generate_key(unsigned char* key);
-    //}
+    
     public class user_and_pass
     {
         public string username { get; set; }
@@ -35,6 +31,8 @@ namespace FileExplorer
     }
     public partial class Form2 : Form
     {
+        public static string key;
+        public static string loginUser;
         public Form2()
         {
             InitializeComponent();
@@ -90,7 +88,8 @@ namespace FileExplorer
                 JsonWriter writer = new JsonTextWriter(sw);
                 js.Serialize(writer, user_and_pass_lists);
             }
-            MessageBox.Show("Sign in success");
+            System.IO.Directory.CreateDirectory(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), loginName));
+            MessageBox.Show("Sign Up success");
 
         }
         private void button2_Click(object sender, EventArgs e)
@@ -98,7 +97,7 @@ namespace FileExplorer
             string jsonfile = "passwd.json";
             string loginName = this.textBox1.Text;
             string loginPass = this.textBox2.Text;
-
+            
             using (System.IO.StreamReader file = System.IO.File.OpenText(jsonfile))
             {
                 using (JsonTextReader reader = new JsonTextReader(file))
@@ -113,15 +112,17 @@ namespace FileExplorer
                         {
                             if (password.ToString() == loginPass)
                             {
+                                key = user["key"].ToString();
+                                loginUser = username.ToString();
                                 this.DialogResult = DialogResult.OK;
                                 this.Dispose();
                                 this.Close();
                             }
                         }
                     }
-                    MessageBox.Show("wrong username or password");
                 }
             }
+
         }
     }
 }
