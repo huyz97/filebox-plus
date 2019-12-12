@@ -8,27 +8,43 @@ using System.Text;
 using System.Windows.Forms;
 using System.IO;
 using System.Runtime.InteropServices;
-
+using System.Diagnostics;
 
 namespace FileExplorer
 {
     public partial class Form1 : Form
     {
-        public byte[] key;
-        public string loginUser;
-        public Form1()
-        {
-            InitializeComponent();
-            key = System.Text.Encoding.Default.GetBytes(Form2.key);
-            loginUser = Form2.loginUser;
-        }
+        [DllImport("../libfilebox.so")]
+        public static extern void encrypted_copy(string src_file_path, string dst_enc_file_path, string des_key_path);
+        [DllImport("../libfilebox.so")]
+        public static extern void decrypted_copy(string src_enc_file_path, string dst_dec_file_path, string des_key_path);
         /// <summary>
         /// 定义初始的全局变量
         /// </summary>
-        string explorerPath = "";
-        string treeViewPath = "";
+        public string key_path;
+        public string loginUser;
+        public string root_path;
+        public string explorerPath;
+        public string treeViewPath;
+        public string tmp_file_path;
+        public Form1()
+        {
+            InitializeComponent();
+            loginUser = Form2.loginUser;
+            root_path = System.IO.Directory.GetCurrentDirectory();
+            tmp_file_path = System.IO.Path.Combine(root_path, "tmp.file");
+            //Console.Write("root:{0}", root_path);
+            key_path = System.IO.Path.Combine(root_path.Substring(0, root_path.LastIndexOf("/")), loginUser + ".key");
+            //Console.Write("key:{0}",key_path);
+            treeViewPath = root_path;
+            explorerPath = root_path;
+            this.treeView_list.Nodes.Clear();
+            getExplorerView(null,root_path);
+        }
+
+
         /// <summary>
-        /// 点击事件
+        /// 导入文件
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -38,10 +54,32 @@ namespace FileExplorer
                 if (openFileDialog1.ShowDialog() == DialogResult.OK)
                 {
                     string orig_path = openFileDialog1.FileName;
-                    string enc_file_path = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), loginUser);
-                    des.encrypted_write(enc_file_path, orig_path, key);
+                    //string enc_file_path = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), loginUser);
                     
-                }
+                    string filename = System.IO.Path.GetFileName(openFileDialog1.FileName);
+                    string enc_file_path = System.IO.Path.Combine(explorerPath, filename);
+                   // Console.Write("src:{0},dst:{1},key:{2}", orig_path, enc_file_path,key_path);
+                    string exec_file_path = System.IO.Path.Combine(root_path, "encrypted_copy.out");
+                    var cmd=exec_file_path+" "+orig_path+" "+enc_file_path+" "+key_path;
+                    var process = new Process()
+                    {
+                        StartInfo = new ProcessStartInfo
+                            {
+                                FileName="/bin/bash",
+                                Arguments=$"-c \" {cmd}\"",
+                                CreateNoWindow=true,
+                                UseShellExecute=false,
+                            }
+                    };
+                    process.Start();
+                    process.WaitForExit();
+                    getFolderView(explorerPath);
+                //Console.Write(cmd);
+                //encrypted_copy(orig_path, enc_file_path, key_path);
+                //this.treeView_list.Nodes.Clear();
+                //getExplorerView(null, this.root_path);
+
+            }
          
           
         }
@@ -52,7 +90,7 @@ namespace FileExplorer
         private void getFolderView(string path)
         {
             explorerPath = path;
-            textBox_path.Text = explorerPath;
+
             try
             {
                 this.listView_show.Items.Clear();
@@ -102,7 +140,7 @@ namespace FileExplorer
             }
             catch (Exception)
             {
-                MessageBox.Show("路径不存在");
+                //MessageBox.Show("路径不存在");
             }
 
            
@@ -180,21 +218,8 @@ namespace FileExplorer
                 {                 
                     string newPath = explorerPath + "/" + filename;    
                     //显示文件大小
-                    int size = getFileSize(newPath);
-                    if(size > 1024*1024)
-                    {
-                        toolStripStatusLabel3.Text = ((float)size / (1024 * 1024)).ToString("F1") +"GB";
-                    }
-                    else if (size>1024)
-                    {
-                        toolStripStatusLabel3.Text = ((float)size / 1024).ToString("F1") + "MB";
-                    }
-                    else
-                    {
-                        toolStripStatusLabel3.Text = size + "KB";
-                         
-                    }
-                    OpenFile(newPath); 
+                    
+                    Read_line(newPath); 
                 }
             }
             catch (ArgumentOutOfRangeException)
@@ -213,22 +238,20 @@ namespace FileExplorer
             try
             {
                 string newPath = explorerPath.Substring(0, explorerPath.LastIndexOf("/"));
-                getFolderView(newPath);
+                if(newPath==root_path)
+                {
+                    MessageBox.Show("cannot access parent directory");
+                }
+                else
+                {
+                    getFolderView(newPath);
+                }
+                
             }catch(ArgumentOutOfRangeException)
             {
             }           
         }
-        /// <summary>
-        /// 打开文件，仅支持文本文件，而且文件大小小于1MB
-        /// </summary>
-        /// <param name="path"></param>
-        private void OpenFile(string path)
-        {            
-            if(getFileSize(path)<1000 && getFileType(path)) //如果文件小于1000KB，并且后缀为文本文件类型
-            {                
-                Read_line(path);
-            }
-        }
+        
         /// <summary>
         /// 读取文本文件 - 自动换行
         /// </summary>
@@ -236,56 +259,44 @@ namespace FileExplorer
         public void Read_line(string path)
         {
             this.richTextBox_txtShow.Visible = true;
-            this.pictureBox1.Visible = false;
             this.richTextBox_txtShow.Clear();
-            StreamReader sr = new StreamReader(path, Encoding.Default);
+            FileInfo fi = new FileInfo(path);
+            if (fi.Length == 0)
+            {
+                MessageBox.Show("file size=0 byte,Writing process go wrong!Maybe you don't have specific privilege to read/write file");
+                return;
+            }
+
+            //IntPtr i;
+
+            //decrypted_copy(path,tmp_file_path, key_path);
+
+            //this.richTextBox_txtShow.Text += Marshal.PtrToStringAuto(i);
+            string exec_file_path = System.IO.Path.Combine(root_path, "decrypted_copy.out");
+            var cmd = exec_file_path + " " + path + " " + tmp_file_path + " " + key_path;
+            var process = new Process()
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "/bin/bash",
+                    Arguments = $"-c \" {cmd}\"",
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                }
+            };
+            process.Start();
+            process.WaitForExit();
+            StreamReader sr = new StreamReader(tmp_file_path, Encoding.Default);
             String line;
             while ((line = sr.ReadLine()) != null)
             {
                 this.richTextBox_txtShow.Text += line.ToString() + "\n";
             }
             sr.Close();
+            File.Delete(tmp_file_path);
         }
        
-        /// <summary>
-        /// 获取文件的大小
-        /// </summary>
-        /// <param name="path"></param>
-        private int getFileSize(string path)
-        {
-            try
-            {
-                FileInfo fi = new FileInfo(path); //返回的是字节大小
-                float x = ((float)fi.Length / 1024);
-                int result = (int)(x + 1);
-                return result;
-            }
-            catch (FileNotFoundException)
-            {
-                return 0;
-            }
-            
-        }
-        /// <summary>
-        /// 获取文件类型是否是文本类型，主要是判断文件后缀。
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        private bool getFileType(string path)
-        {
-           
-            string fileType = path.Substring(path.LastIndexOf(".")+1, path.Length - path.LastIndexOf(".") -1);
-            string[] type = { "txt", "xml", "ini", "conf", "java", "cs", "sql", "html", "js", "css", "c", "h", "cpp","py" };
 
-            for (int i = 0; i < type.Length;i++ )
-            {
-                if (fileType.Equals(type[i]))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
         
         /// <summary>
         /// 定时器-状态栏
@@ -300,16 +311,16 @@ namespace FileExplorer
         /// <summary>
         /// 转到
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void button_go_Click(object sender, EventArgs e)
-        {
-            string path = this.textBox_path.Text;
-            explorerPath = path;
-            treeViewPath = path;            
-            this.treeView_list.Nodes.Clear();
-            getExplorerView(null, path);
-        }
+        /// <param name = "sender" ></ param >
+        /// < param name="e"></param>
+        //private void button_go_Click(object sender, EventArgs e)
+        //{
+        //    string path = this.textBox_path.Text;
+        //    explorerPath = path;
+        //    treeViewPath = path;
+        //    this.treeView_list.Nodes.Clear();
+        //    getExplorerView(null, path);
+        //}
         /// <summary>
         /// 文件删除
         /// </summary>
@@ -323,7 +334,7 @@ namespace FileExplorer
                 string newPath = explorerPath + "/" + filename;
                 if (!filename.Equals(""))
                 {
-                    DialogResult r1 = MessageBox.Show("是否永久删除该文件？", "删除", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    DialogResult r1 = MessageBox.Show("are you sure？", "yes", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                     if (r1.ToString() == "Yes")
                     {
@@ -341,7 +352,7 @@ namespace FileExplorer
             }
             catch (Exception)
             {
-                MessageBox.Show("暂时不允许删除目录");
+                MessageBox.Show("not allow to delete directory");
             }
             
         }
@@ -350,11 +361,78 @@ namespace FileExplorer
         {
 
         }
+
+        private void button_export_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string filename = this.listView_show.SelectedItems[0].SubItems[0].Text;
+                if (filename.StartsWith("[")) //目录处理方式
+                {
+                    filename = filename.Replace("[", "");
+                    filename = filename.Replace("]", "");
+                    string newPath = explorerPath + "/" + filename;
+                    getFolderView(newPath);//遍历该层文件                    
+                }
+                else //文件处理方式
+                {
+                    string newPath = explorerPath + "/" + filename;
+                    //显示文件大小
+
+                    export_file(newPath);
+                }
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                MessageBox.Show(ex.ToString());
+            }
+        }
+        /// <summary>
+        /// 读取文本文件 - 自动换行
+        /// </summary>
+        /// <param name="path"></param>
+        public void export_file(string path)
+        {
+            if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                string dst_path = saveFileDialog1.FileName;
+                string exec_file_path = System.IO.Path.Combine(root_path, "decrypted_copy.out");
+                var cmd = exec_file_path + " " + path + " " + dst_path + " " + key_path;
+                var process = new Process()
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "/bin/bash",
+                        Arguments = $"-c \" {cmd}\"",
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                    }
+                };
+                process.Start();
+                process.WaitForExit();
+                Console.Write(cmd);
+            }
+        }
+
+        private void button_create_folder_Click(object sender, EventArgs e)
+        {
+            string foldername = textBox_folder_name.Text;
+            System.IO.Directory.CreateDirectory(System.IO.Path.Combine(explorerPath,foldername));
+            getFolderView(explorerPath);
+        }
     }
-    public class des
-    {
-        [DllImport("./libfilebox.so", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void encrypted_write(string enc_file_path, string orig_file_path, byte[] des_key);
-        public static extern int decrypted_read(string filepath, string buffer, byte[] des_key);
-    }
+    
+
+    //public class des
+    //{
+    //    [DllImport("../libfilebox.so", CallingConvention = CallingConvention.Cdecl)]
+    //    public static extern void encrypted_copy(string src_file_path, string dst_enc_file_path, string des_key_path);
+    //    [DllImport("../libfilebox.so", CallingConvention = CallingConvention.Cdecl)]
+    //    public static extern void decrypted_copy(string src_enc_file_path, string dst_dec_file_path, string des_key_path);
+    //    //[DllImport("../libfilebox.so", CallingConvention = CallingConvention.Cdecl)]
+    //    //public static extern void encrypted_write(string enc_file_path, string orig_file_path, string des_key_path);
+    //    //[DllImport("../libfilebox.so", CallingConvention = CallingConvention.Cdecl)]
+    //    //public static extern void decrypted_read(string filepath, string des_key_path,string tmp_file_path);
+
+    //}
 }
