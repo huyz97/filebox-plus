@@ -479,48 +479,47 @@ int file_write(struct file *file, unsigned long long offset, unsigned char *data
 
 /////////////////////////////////////////系统调用实现////////////////////////////////////////////////////
 //新的加密写系统调用
-long new_write(struct pt_regs *regs)//regs:rdi,rsi,rdx,r10,r8,r9 调用参数：filename，buffer，size，key
+//调用该系统调用时，使用syscall(250,char* src_filename，char* dst_filename，unsigned long src_file_size, char* key)
+//实现功能：将路径为src_filename的文件使用密钥key，进行DES加密，并保存为路径dst_filename的加密文件
+long new_write(struct pt_regs *regs)//regs:rdi,rsi,rdx,r10,r8,r9 
 {
-    struct file * f;
-    //char *ch;
+    struct file *dst_f,*src_f;
     unsigned long file_size=(unsigned long)regs->dx;
-    char filename[100],text[file_size],key[DES_KEY_SIZE];
-    strncpy_from_user(filename,(char*)regs->di,100);//rdi is filename
-    strncpy_from_user(text,(char*)regs->si,file_size);//rsi is text
+    char dst_filename[100],src_filename[100],key[DES_KEY_SIZE+1];
+    strncpy_from_user(src_filename,(char*)regs->di,100);//rdi is src_file
+    strncpy_from_user(dst_filename,(char*)regs->si,100);//rsi is dst_file
     strncpy_from_user(key,(char*)regs->r10,DES_KEY_SIZE);//r10 is key
-    // for(ch=text;*ch!='\0';ch++)
-    // {
-    //     *ch=(char)((int)*ch+1);
-    // }
 
-    // Generate DES key set
-    short int process_mode = ENCRYPTION_MODE;
+    short int process_mode = ENCRYPTION_MODE;//设定模式为加密
     unsigned long block_count = 0, number_of_blocks;
-    number_of_blocks = file_size/8 + ((file_size%8)?1:0);
+    number_of_blocks = file_size/8 + ((file_size%8)?1:0);//计算数据块数量
     unsigned char* data_block = (unsigned char*) vmalloc(8*sizeof(char));
     unsigned char* processed_block = (unsigned char*) vmalloc(8*sizeof(char));
+
+    // Generate DES key set
     key_set* key_sets = (key_set*)vmalloc(17*sizeof(key_set));
     generate_sub_keys(key, key_sets);
-    unsigned short int padding;
-    f=file_open(filename,O_CREAT|O_RDWR|O_APPEND,S_IRWXU|S_IRWXG|S_IRWXO);
-     while(block_count<number_of_blocks-1)
+    unsigned short int padding;//padding为DES填充最后一个数据块的长度
+    dst_f=file_open(dst_filename,O_CREAT|O_RDWR|O_APPEND,S_IRWXU|S_IRWXG|S_IRWXO);
+    src_f=file_open(src_filename,O_CREAT|O_RDWR|O_APPEND,S_IRWXU|S_IRWXG|S_IRWXO);
+    while(block_count<number_of_blocks-1)
     {
-        strncpy(data_block,text+block_count*8,8);
+        file_read(src_f,block_count*8,data_block,8);//读取源文件内容
         process_message(data_block, processed_block, key_sets, process_mode);
-        file_write(f,block_count*8,processed_block, 8);
+        file_write(dst_f,block_count*8,processed_block, 8);
         block_count++;
     }
-    strncpy(data_block,text+block_count*8,8);
+    file_read(src_f,block_count*8,data_block,8);//读取最后一块文件内容
     padding=8-file_size%8;
     if (padding < 8) { // Fill empty data block bytes with padding
         memset((data_block + 8 - padding), (unsigned char)padding, padding);
     }
     process_message(data_block, processed_block, key_sets, process_mode);
-    file_write(f,0,processed_block, 8);
+    file_write(dst_f,0,processed_block, 8);
     if (padding == 8) { // Write an extra block for padding
         memset(data_block, (unsigned char)padding, 8);
         process_message(data_block, processed_block, key_sets, process_mode);
-        file_write(f,block_count*8,processed_block, 8);
+        file_write(dst_f,block_count*8,processed_block, 8);
     }
     memset(data_block, 0, 8*sizeof(char));
     memset(processed_block, 0, 8*sizeof(char));
@@ -529,57 +528,59 @@ long new_write(struct pt_regs *regs)//regs:rdi,rsi,rdx,r10,r8,r9 调用参数：
     vfree(processed_block);
     vfree(key_sets);
 
-    //printk("Info: filename=%s  buf=%s",filename,text);
-    //f=file_open(filename,O_CREAT|O_RDWR|O_APPEND,S_IRWXU|S_IRWXG|S_IRWXO);
-    //file_write(f,0,text,strlen(text));
-    file_close(f);
+    file_close(src_f);
+    file_close(dst_f);
 
 }
 
-//新的解密读系统调用
-long new_read(struct pt_regs *regs)//regs:rdi,rsi,rdx,r10,r8,r9 调用参数：filename，buffer，size，key
+//新的解密读系统调用,由于缓冲区有限，因此将解密结果直接写入目标文件
+//调用该系统调用时，使用syscall(249,char* src_enc_file，char* dst_dec_file，unsigned long src_file_size, char* key)
+//实现功能：将路径为src_enc_file的文件使用密钥key，进行DES解密，并保存为路径dst_dec_file的加密文件
+long new_read(struct pt_regs *regs)//regs:rdi,rsi,rdx,r10,r8,r9 
 {
-    struct file * f;
-    //char *ch;
+    struct file *dst_f,*src_f;
     unsigned long file_size=(unsigned long)regs->dx;
-    char filename[100],dec_text[file_size],key[DES_KEY_SIZE];
-    strncpy_from_user(filename,(char*)regs->di,100);//rdi is filename
+    char src_enc_file[100],dst_dec_file[100],key[DES_KEY_SIZE];
+    strncpy_from_user(src_enc_file,(char*)regs->di,100);//rdi is src_filename
+    strncpy_from_user(dst_dec_file,(char*)regs->si,100);//rsi is dst_filename
     strncpy_from_user(key,(char*)regs->r10,DES_KEY_SIZE);//r10 is key
-    short int process_mode = DECRYPTION_MODE;
+
+    short int process_mode = DECRYPTION_MODE;//设定模式为解密
     unsigned long block_count = 0, number_of_blocks;
-    number_of_blocks = file_size/8 + ((file_size%8)?1:0);
+    number_of_blocks = file_size/8 + ((file_size%8)?1:0);//计算数据块数量
     unsigned char* data_block = (unsigned char*) vmalloc(8*sizeof(char));
     unsigned char* processed_block = (unsigned char*) vmalloc(8*sizeof(char));
+    // Generate DES key set
     key_set* key_sets = (key_set*)vmalloc(17*sizeof(key_set));
     generate_sub_keys(key, key_sets);
-    unsigned short int padding;
-    f=file_open(filename,O_CREAT|O_RDWR|O_APPEND,S_IRWXU|S_IRWXG|S_IRWXO);
+    unsigned short int padding;//padding为DES填充最后一个数据块的长度
+
+    src_f=file_open(src_enc_file,O_CREAT|O_RDWR|O_APPEND,S_IRWXU|S_IRWXG|S_IRWXO);
+    dst_f=file_open(dst_dec_file,O_CREAT|O_RDWR|O_APPEND,S_IRWXU|S_IRWXG|S_IRWXO);
     while(block_count<number_of_blocks-1)
     {
-        file_read(f,block_count*8,data_block,8);//读取加密文件内容
+        file_read(src_f,block_count*8,data_block,8);//读取加密文件内容
         process_message(data_block, processed_block, key_sets, process_mode);
-        strncpy(dec_text+block_count*8,processed_block,8);
+        file_write(dst_f,block_count*8,processed_block, 8);
         block_count++;
     }    
-    file_read(f,block_count*8,data_block,8);
+    file_read(src_f,block_count*8,data_block,8);
     process_message(data_block, processed_block, key_sets, process_mode);
     padding = processed_block[7];
     if (padding<8)
     {
-        strncpy(dec_text+block_count*8,processed_block,8-padding);
-        file_size=file_size-padding;
+        file_write(dst_f,block_count*8,processed_block, 8-padding);
     }
-    copy_to_user((char*)regs->si,dec_text,file_size);
     memset(data_block, 0, 8*sizeof(char));
     memset(processed_block, 0, 8*sizeof(char));
     memset(key_sets, 0, 17*sizeof(key_set));
     vfree(data_block);
     vfree(processed_block);
     vfree(key_sets);
-    file_close(f);
+    file_close(src_f);
+    file_close(dst_f);
 
 }
-
 
 static int __init audit_init(void)
 {
@@ -588,16 +589,15 @@ static int __init audit_init(void)
     printk("Info: sys_call_table found at %lx\n",(unsigned long)sys_call_table) ;
 
     orig_new_write = (orig_new_write_t) sys_call_table[__NR_keyctl];//__NR_keyctl is 250
-    orig_new_read = (orig_new_read_t) sys_call_table[249];
-    //printk("__NR_keyctl=%d",__NR_keyctl);
+    orig_new_read=(orig_new_read_t) sys_call_table[__NR_request_key];//__NR_request_key is 249
 
     pte = lookup_address((unsigned long) sys_call_table, &level);
         // Change PTE to allow writing
         set_pte_atomic(pte, pte_mkwrite(*pte));
         printk("Info: Disable write-protection of page with sys_call_table\n");
 
-        sys_call_table[__NR_keyctl] = (demo_sys_call_ptr_t) new_write;   
-        sys_call_table[249] = (demo_sys_call_ptr_t) new_read;   
+        sys_call_table[__NR_keyctl] = (demo_sys_call_ptr_t) new_write;  
+        sys_call_table[__NR_request_key] = (demo_sys_call_ptr_t) new_read; 
 
         set_pte_atomic(pte, pte_clear_flags(*pte, _PAGE_RW));
         printk("Info: sys_call_table hooked!\n");
@@ -613,7 +613,7 @@ static void __exit audit_exit(void)
     set_pte_atomic(pte, pte_mkwrite(*pte));
 
     sys_call_table[__NR_keyctl] = (demo_sys_call_ptr_t)orig_new_write;
-    sys_call_table[249] = (demo_sys_call_ptr_t)orig_new_read;
+    sys_call_table[__NR_request_key] = (demo_sys_call_ptr_t)orig_new_read;
 
     set_pte_atomic(pte, pte_clear_flags(*pte, _PAGE_RW));
 

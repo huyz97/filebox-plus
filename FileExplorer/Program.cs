@@ -22,7 +22,7 @@ namespace FileExplorer
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             //Application.Run(new Login());
-            Form2 login = new Form2();
+            login login = new login();
 
             //界面转换
             login.ShowDialog();
@@ -30,7 +30,7 @@ namespace FileExplorer
             if (login.DialogResult == DialogResult.OK)
             {
                 login.Dispose();
-                Application.Run(new Form1());
+                Application.Run(new filebox());
             }
             else if (login.DialogResult == DialogResult.Cancel)
             {

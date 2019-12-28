@@ -1,6 +1,6 @@
 ﻿namespace FileExplorer
 {
-    partial class Form1
+    partial class filebox
     {
         /// <summary>
         /// 必需的设计器变量。

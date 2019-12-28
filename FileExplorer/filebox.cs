@@ -12,30 +12,29 @@ using System.Diagnostics;
 
 namespace FileExplorer
 {
-    public partial class Form1 : Form
+    public partial class filebox : Form
     {
-        [DllImport("../libfilebox.so")]
-        public static extern void encrypted_copy(string src_file_path, string dst_enc_file_path, string des_key_path);
-        [DllImport("../libfilebox.so")]
-        public static extern void decrypted_copy(string src_enc_file_path, string dst_dec_file_path, string des_key_path);
+        //[DllImport("../libfilebox.so")]
+        //public static extern void encrypted_copy(string src_file_path, string dst_enc_file_path, string des_key_path);
+        //[DllImport("../libfilebox.so")]
+        //public static extern void decrypted_copy(string src_enc_file_path, string dst_dec_file_path, string des_key_path);
         /// <summary>
         /// 定义初始的全局变量
         /// </summary>
+
         public string key_path;
         public string loginUser;
         public string root_path;
         public string explorerPath;
         public string treeViewPath;
         public string tmp_file_path;
-        public Form1()
+        public filebox()
         {
             InitializeComponent();
-            loginUser = Form2.loginUser;
+            loginUser = login.loginUser;
             root_path = System.IO.Directory.GetCurrentDirectory();
             tmp_file_path = System.IO.Path.Combine(root_path, "tmp.file");
-            //Console.Write("root:{0}", root_path);
             key_path = System.IO.Path.Combine(root_path.Substring(0, root_path.LastIndexOf("/")), loginUser + ".key");
-            //Console.Write("key:{0}",key_path);
             treeViewPath = root_path;
             explorerPath = root_path;
             this.treeView_list.Nodes.Clear();
@@ -50,35 +49,27 @@ namespace FileExplorer
         /// <param name="e"></param>
         private void button_open_Click(object sender, EventArgs e)
         {
-           
-                if (openFileDialog1.ShowDialog() == DialogResult.OK)
-                {
-                    string orig_path = openFileDialog1.FileName;
-                    //string enc_file_path = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), loginUser);
-                    
-                    string filename = System.IO.Path.GetFileName(openFileDialog1.FileName);
-                    string enc_file_path = System.IO.Path.Combine(explorerPath, filename);
-                   // Console.Write("src:{0},dst:{1},key:{2}", orig_path, enc_file_path,key_path);
-                    string exec_file_path = System.IO.Path.Combine(root_path, "encrypted_copy.out");
-                    var cmd=exec_file_path+" "+orig_path+" "+enc_file_path+" "+key_path;
-                    var process = new Process()
-                    {
-                        StartInfo = new ProcessStartInfo
-                            {
-                                FileName="/bin/bash",
-                                Arguments=$"-c \" {cmd}\"",
-                                CreateNoWindow=true,
-                                UseShellExecute=false,
-                            }
-                    };
-                    process.Start();
-                    process.WaitForExit();
-                    getFolderView(explorerPath);
-                //Console.Write(cmd);
-                //encrypted_copy(orig_path, enc_file_path, key_path);
-                //this.treeView_list.Nodes.Clear();
-                //getExplorerView(null, this.root_path);
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                string orig_path = openFileDialog1.FileName;
 
+                string filename = System.IO.Path.GetFileName(openFileDialog1.FileName);
+                string enc_file_path = System.IO.Path.Combine(explorerPath, filename);
+                string exec_file_path = System.IO.Path.Combine(root_path, "encrypted_copy.out");
+                var cmd = exec_file_path + " " + orig_path + " " + enc_file_path + " " + key_path;
+                var process = new Process()
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "/bin/bash",
+                        Arguments = $"-c \" {cmd}\"",
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                    }
+                };
+                process.Start();
+                process.WaitForExit();
+                getFolderView(explorerPath);
             }
          
           
@@ -111,15 +102,6 @@ namespace FileExplorer
             }
            
         }       
-        /**
-         * 遍历方案： -- 深度优先遍历
-         * 1.获取当前目录下的所有文件夹
-         * 2.将第一个目录添加到treeView节点，并返回该节点的 TreeNode对象 
-         * 3.递归将返回到treeNode对象传递进去，还有子级目录的文件夹名称
-         * 4.循环
-         * 5.深度结束条件：子级目录为空 
-         * 问题，第一层根节点怎么传值？ 解决 传一个 null
-         */ 
 
         /// <summary>
         /// 遍历函数
@@ -308,19 +290,7 @@ namespace FileExplorer
             toolStripStatusLabel1.Text = DateTime.Now.ToString();//时间
             toolStripStatusLabel2.Text = "total"+this.listView_show.Items.Count+"project"; //文件数          
         }
-        /// <summary>
-        /// 转到
-        /// </summary>
-        /// <param name = "sender" ></ param >
-        /// < param name="e"></param>
-        //private void button_go_Click(object sender, EventArgs e)
-        //{
-        //    string path = this.textBox_path.Text;
-        //    explorerPath = path;
-        //    treeViewPath = path;
-        //    this.treeView_list.Nodes.Clear();
-        //    getExplorerView(null, path);
-        //}
+
         /// <summary>
         /// 文件删除
         /// </summary>
@@ -421,18 +391,5 @@ namespace FileExplorer
             getFolderView(explorerPath);
         }
     }
-    
-
-    //public class des
-    //{
-    //    [DllImport("../libfilebox.so", CallingConvention = CallingConvention.Cdecl)]
-    //    public static extern void encrypted_copy(string src_file_path, string dst_enc_file_path, string des_key_path);
-    //    [DllImport("../libfilebox.so", CallingConvention = CallingConvention.Cdecl)]
-    //    public static extern void decrypted_copy(string src_enc_file_path, string dst_dec_file_path, string des_key_path);
-    //    //[DllImport("../libfilebox.so", CallingConvention = CallingConvention.Cdecl)]
-    //    //public static extern void encrypted_write(string enc_file_path, string orig_file_path, string des_key_path);
-    //    //[DllImport("../libfilebox.so", CallingConvention = CallingConvention.Cdecl)]
-    //    //public static extern void decrypted_read(string filepath, string des_key_path,string tmp_file_path);
-
-    //}
+   
 }

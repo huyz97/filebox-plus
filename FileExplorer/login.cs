@@ -12,30 +12,16 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Linq;
 
-
 namespace FileExplorer
-{
-    
-    public class user_and_pass
+{    
+    public partial class login : Form
     {
-        public string username { get; set; }
-        public string password { get; set; }
-        public user_and_pass(string username,string password)
-        {
-            this.username = username;
-            this.password = password;
-        }
-    }
-    public class user_and_pass_list
-    {
-        public List<user_and_pass> user { get; set; }
-    }
-    public partial class Form2 : Form
-    {
+        
         public static string loginUser;
-        public Form2()
+        public login()
         {
             InitializeComponent();
+
         }
 
         private void Form2_Load(object sender, EventArgs e)
@@ -187,6 +173,20 @@ namespace FileExplorer
                 throw new Exception(ex.Message);
             }
         }
+    }
+    public class user_and_pass
+    {
+        public string username { get; set; }
+        public string password { get; set; }
+        public user_and_pass(string username, string password)
+        {
+            this.username = username;
+            this.password = password;
+        }
+    }
+    public class user_and_pass_list
+    {
+        public List<user_and_pass> user { get; set; }
     }
     public class des_key
     {
