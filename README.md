@@ -5,6 +5,16 @@
 
 IS415 系统软件课程设计 大作业
 
+## Code
+
+|---- FileExplorer	UI界面模块
+
+|---- applicationLayer	应用层加解密接口
+
+|---- kernelModule	系统调用重载
+
+|---- workspace	工作目录
+
 ## Install
 
 1.编译内核驱动模块
@@ -18,7 +28,7 @@ insmod Filebox.ko
 2.编译应用层加解密接口
 
 ```
-cd kernelModule
+cd applicationLayer
 gcc -o ../workspace/encrypted_copy.out main_for_encrypted.c
 gcc -o ../workspace/decrypted_copy.out main_for_decrypted.c
 gcc -shared -o ../libfilebox.so -fPIC main_for_so.c
