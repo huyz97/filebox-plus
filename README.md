@@ -42,8 +42,8 @@ mono FileExplorer/bin/Debug/FileExplorer.exe
 
 ## Screenshot
 
-![](F:\GithubRepos\FileBoxPlus\screenshot\1.png)
+![](screenshot\1.png)
 
-![](F:\GithubRepos\FileBoxPlus\screenshot\2.png)
+![](screenshot\2.png)
 
-![](F:\GithubRepos\FileBoxPlus\screenshot\3.png)
+![](screenshot\3.png)
